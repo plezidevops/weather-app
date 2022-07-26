@@ -1,19 +1,28 @@
-const request = require('postman-request');
+const geocode = require('./utils/geocode');
+const forecast = require('./utils/forecast');
 
-const url = 'http://api.weatherstack.com/current?access_key=872f6a11ef0930bd5f3b80e7508bfeb4&query=NY&units=f';
+const args = process.argv.slice(2);
+console.log(args);
+if (args.length > 0) {
+  address = args.join(' ');
 
-request({ url: url, json: true }, (error, response, body) => {
-  //const temperature = body.current.temperature;
-  //const feelslike = body.current.feelslike;
-  const [temperature, feelslike] = [body.current.temperature, body.current.feelslike];
-  weatherDescription = body.current.weather_descriptions[0];
-  console.log(`It is currently ${temperature} degrees Fahrenheit out. It feels like ${feelslike} out. It is ${weatherDescription}.`);
+  geocode(address, (error, data) => {
+    if (error) {
+      return error;
+    }
 
-});
+    forecast(data.latitude, data.longitude, (error, forecastData) => {
+      if (error) {
+        return error;
+      }
 
-const geocodeURL = 'https://api.mapbox.com/geocoding/v5/mapbox.places/Los%20Angeles.json?access_token=pk.eyJ1IjoidGlwaXpvIiwiYSI6ImNsNXlnYmY0eTB0ZWozam1tdHpwYjVwZHUifQ.6YJVhN0gbzDJCZSnjZn0tQ#downloadJSON=true';
+      const { temperature, feelslike, weatherDescription } = forecastData;
+      console.log(`It is currently ${temperature} degrees Fahrenheit in ${data.placeName}. It feels like ${feelslike} out. It is ${weatherDescription}.`);
 
-request({ url: geocodeURL, json: true }, (error, response, body) => {
-  const [longitude, latitude] = [body.features[0].center[0], body.features[0].center[1]];
-  console.log(longitude, latitude);
-});
+    });
+
+  });
+
+} else (
+  console.log("Please provide an address.")
+);
